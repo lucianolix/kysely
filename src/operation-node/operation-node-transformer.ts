@@ -98,7 +98,7 @@ import { RefreshMaterializedViewNode } from './refresh-materialized-view-node.js
 import { OrActionNode } from './or-action-node.js'
 import { CollateNode } from './collate-node.js'
 import { QueryId } from '../util/query-id.js'
-
+import { AlterTypeNode } from './alter-type-node.js'
 /**
  * Transforms an operation node tree into another one.
  *
@@ -240,6 +240,7 @@ export class OperationNodeTransformer {
     OutputNode: this.transformOutput.bind(this),
     OrActionNode: this.transformOrAction.bind(this),
     CollateNode: this.transformCollate.bind(this),
+    AlterTypeNode: this.transformAlterType.bind(this),
   })
 
   transformNode<T extends OperationNode | undefined>(
@@ -1332,5 +1333,20 @@ export class OperationNodeTransformer {
   ): CollateNode {
     // An Object.freezed leaf node. No need to clone.
     return node
+  }
+
+  protected transformAlterType(
+    node: AlterTypeNode,
+    queryId?: QueryId,
+  )
+  : AlterTypeNode {
+    return requireAllProps<AlterTypeNode>({
+      kind: 'AlterTypeNode',
+      name: this.transformNode(node.name, queryId),
+      ownerTo: this.transformNode(node.ownerTo, queryId),
+      renameTo: this.transformNode(node.renameTo, queryId),
+      renameValue: this.transformNode(node.renameValue, queryId),
+      setSchema: this.transformNode(node.setSchema, queryId),
+    })
   }
 }

@@ -116,6 +116,7 @@ import { OrActionNode } from '../operation-node/or-action-node.js'
 import { logOnce } from '../util/log-once.js'
 import { CollateNode } from '../operation-node/collate-node.js'
 import { QueryId } from '../util/query-id.js'
+import { AlterTypeNode } from '../operation-node/alter-type-node.js'
 
 export class DefaultQueryCompiler
   extends OperationNodeVisitor
@@ -1388,6 +1389,32 @@ export class DefaultQueryCompiler
     }
 
     this.visitNode(node.name)
+  }
+
+  protected override visitAlterType(node: AlterTypeNode): void {
+    this.append('alter type')
+    this.visitNode(node.name)
+    this.append(' ')
+
+    if (node.ownerTo) {
+      this.append('owner to ')
+      this.visitNode(node.ownerTo)
+    }
+
+    if (node.renameTo) {
+      this.append('rename to ')
+      this.visitNode(node.renameTo)
+    }
+
+    if (node.setSchema) {
+      this.append('set schema ')
+      this.visitNode(node.setSchema)
+    }
+
+    if (node.renameValue) {
+      //PENDING
+    }
+
   }
 
   protected override visitExplain(node: ExplainNode): void {
