@@ -1411,8 +1411,12 @@ export class DefaultQueryCompiler
       this.visitNode(node.setSchema)
     }
 
-    if (node.renameValue) {
-      //PENDING
+    if (node.renameValueOldName && node.renameValueNewName) {
+      this.append('rename value ')
+      this.visitNode(node.renameValueOldName)
+      this.append(' ')
+      this.append('to ')
+      this.visitNode(node.renameValueNewName)
     }
 
   }
