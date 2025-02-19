@@ -8,62 +8,52 @@ import { freeze } from '../util/object-utils.js'
 import { AlterTypeNode } from '../operation-node/alter-type-node.js'
 import { AlterTypeExecutor } from './alter-type-executor.js'
 import { IdentifierNode } from '../operation-node/identifier-node.js'
-import { AlterTypeAddValueBuilder } from './alter-type-add-value-builder.js'
+import { AlterTypeBuilder } from './alter-type-builder.js'
 import { AddValueNode } from '../operation-node/add-value-node.js'
 
-export class AlterTypeBuilder implements OperationNodeSource, Compilable  {
-    readonly #props: AlterTypeBuilderProps
+export class AlterTypeAddValueBuilder implements OperationNodeSource, Compilable  {
+    readonly #props: AlterTypeAddValueBuilderProps
 
-    constructor(props: AlterTypeBuilderProps) {
+    constructor(props: AlterTypeAddValueBuilderProps) {
         this.#props = freeze(props)
     }
 
-    ownerTo(newOwner: string): AlterTypeExecutor {
-        return new AlterTypeExecutor({
-            ...this.#props,
-            node: AlterTypeNode.cloneWithAlterTypeProps(this.#props.node, {
-                ownerTo: IdentifierNode.create(newOwner)
-            })
-        })
-
-    }
-    renameTo(newTypeName: string): AlterTypeExecutor {
-        return new AlterTypeExecutor({
-            ...this.#props,
-            node: AlterTypeNode.cloneWithAlterTypeProps(this.#props.node, {
-                renameTo: IdentifierNode.create(newTypeName)
-            })
-        })
-    }
-
-    setSchema(newSchema: string): AlterTypeExecutor {
-        return new AlterTypeExecutor({
-            ...this.#props,
-            node: AlterTypeNode.cloneWithAlterTypeProps(this.#props.node, {
-                setSchema: IdentifierNode.create(newSchema)
-            })
-        })
-    }
-
-    addValue(value: string) {
+    ifNotExists() {
         return new AlterTypeAddValueBuilder({
             ...this.#props,
             node: AlterTypeNode.cloneWithAlterTypeProps(this.#props.node, {
-                addValue: AddValueNode.create(IdentifierNode.create(value))
+                addValue: AddValueNode.cloneWithAddValueProps(this.#props.node.addValue!, {
+                    ifNotExists: true
+                })
             })
         })
     }
 
-    renameValue(typeValueName: string, newTypeValueName:string) {
+    before(value: string) {
         return new AlterTypeExecutor({
             ...this.#props,
             node: AlterTypeNode.cloneWithAlterTypeProps(this.#props.node, {
-                renameValueOldName: IdentifierNode.create(typeValueName),
-                renameValueNewName: IdentifierNode.create(newTypeValueName)
+                addValue: AddValueNode.cloneWithAddValueProps(this.#props.node.addValue!, {
+                    before: IdentifierNode.create(value)
+                })
             })
         })
     }
-    toOperationNode(): AlterTypeNode {
+    after(value: string) {
+        return new AlterTypeExecutor({
+            ...this.#props,
+            node: AlterTypeNode.cloneWithAlterTypeProps(this.#props.node, {
+                addValue: AddValueNode.cloneWithAddValueProps(this.#props.node.addValue!, {
+                    after: IdentifierNode.create(value)
+                })
+            })
+        })
+    }
+
+    $call<T>(func: (qb: this) => T): T {
+        return func(this)
+      }
+      toOperationNode(): AlterTypeNode {
         return this.#props.executor.transformQuery(
             this.#props.node,
             this.#props.queryId,
@@ -79,7 +69,7 @@ export class AlterTypeBuilder implements OperationNodeSource, Compilable  {
 }
 
 
-export interface AlterTypeBuilderProps {
+export interface AlterTypeAddValueBuilderProps {
     readonly queryId: QueryId
     readonly executor: QueryExecutor
     readonly node: AlterTypeNode
