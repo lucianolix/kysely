@@ -81,7 +81,7 @@ export class AlterTypeBuilder implements OperationNodeSource, Compilable {
      * ```
      */
     addValue(value: string, addValueOptions?: AlterTypeAddValueCallback ) {
-        const addValueNode = AddValueNode.create(IdentifierNode.create(value))
+        const addValueNode = AddValueNode.create(ValueNode.createImmediate(value))
         const addValueBuilder = new AlterTypeAddValueBuilder(addValueNode)
         const builder = addValueOptions ? addValueOptions(addValueBuilder) : addValueBuilder
         return new AlterTypeExecutor({
@@ -104,8 +104,8 @@ export class AlterTypeBuilder implements OperationNodeSource, Compilable {
         return new AlterTypeExecutor({
             ...this.#props,
             node: AlterTypeNode.cloneWithAlterTypeProps(this.#props.node, {
-                renameValueOldName: ValueNode.create(oldValue),
-                renameValueNewName: ValueNode.create(newValue)
+                renameValueOldName: ValueNode.createImmediate(oldValue),
+                renameValueNewName: ValueNode.createImmediate(newValue)
             })
         })
     }
