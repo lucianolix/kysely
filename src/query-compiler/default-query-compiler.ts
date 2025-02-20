@@ -1393,13 +1393,13 @@ export class DefaultQueryCompiler
   }
 
   protected override visitAlterType(node: AlterTypeNode): void {
-    this.append('alter type')
+    this.append('alter type ')
     this.visitNode(node.name)
     this.append(' ')
 
     if (node.ownerTo) {
       this.append('owner to ')
-      this.visitNode(node.ownerTo)
+      this.visitNode(node.ownerTo)  
     }
 
     if (node.renameTo) {
