@@ -299,6 +299,17 @@ export class SchemaModule {
     })
   }
 
+  /**
+   * Alter a type.
+   * 
+   * Only some dialects like PostgreSQL have user-defined types.
+   * ```ts
+   * await db.schema
+   *   .alterType('species')
+   *   .addValue(['capybara'])
+   *   .execute()
+   * ```
+   */
   alterType(typeName: string): AlterTypeBuilder {
     return new AlterTypeBuilder({
       queryId: createQueryId(),
