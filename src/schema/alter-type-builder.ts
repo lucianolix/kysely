@@ -11,13 +11,22 @@ import { IdentifierNode } from '../operation-node/identifier-node.js'
 import { AlterTypeAddValueBuilder } from './alter-type-add-value-builder.js'
 import { AddValueNode } from '../operation-node/add-value-node.js'
 
-export class AlterTypeBuilder implements OperationNodeSource, Compilable  {
+export class AlterTypeBuilder implements OperationNodeSource, Compilable {
     readonly #props: AlterTypeBuilderProps
 
     constructor(props: AlterTypeBuilderProps) {
         this.#props = freeze(props)
     }
 
+    /**
+     * Changes the owner of the type. 
+     *
+     * ### Examples
+     *
+     * ```ts
+     * db.schema.alterType('species').ownerTo('user').execute()
+     * ```
+     */
     ownerTo(newOwner: string): AlterTypeExecutor {
         return new AlterTypeExecutor({
             ...this.#props,
@@ -25,8 +34,16 @@ export class AlterTypeBuilder implements OperationNodeSource, Compilable  {
                 ownerTo: IdentifierNode.create(newOwner)
             })
         })
-
     }
+    /**
+     * Changes the name of the type.
+     *
+     * ### Examples
+     *
+     * ```ts
+     * db.schema.alterType('species').renameTo('genus').execute()
+     * ```
+     */
     renameTo(newTypeName: string): AlterTypeExecutor {
         return new AlterTypeExecutor({
             ...this.#props,
@@ -35,7 +52,15 @@ export class AlterTypeBuilder implements OperationNodeSource, Compilable  {
             })
         })
     }
-
+    /**
+     * Moves the type to target schema.
+     *
+     * ### Examples
+     *
+     * ```ts
+     * db.schema.alterType('species').setSchema('public').execute()
+     * ```
+     */
     setSchema(newSchema: string): AlterTypeExecutor {
         return new AlterTypeExecutor({
             ...this.#props,
@@ -45,6 +70,15 @@ export class AlterTypeBuilder implements OperationNodeSource, Compilable  {
         })
     }
 
+    /**
+     * Adds a new value to an enum type.
+     *
+     * ### Examples
+     *
+     * ```ts
+     * db.schema.alterType('species').addValue('capybara').execute()
+     * ```
+     */
     addValue(value: string) {
         return new AlterTypeAddValueBuilder({
             ...this.#props,
@@ -53,13 +87,21 @@ export class AlterTypeBuilder implements OperationNodeSource, Compilable  {
             })
         })
     }
-
-    renameValue(typeValueName: string, newTypeValueName:string) {
+    /**
+     * Renames a value of an enum type.
+     *
+     * ### Examples
+     *
+     * ```ts
+     * db.schema.alterType('species').renameValue('cat', 'capybara').execute()
+     * ```
+     */
+    renameValue(oldValue: string, newValue: string) {
         return new AlterTypeExecutor({
             ...this.#props,
             node: AlterTypeNode.cloneWithAlterTypeProps(this.#props.node, {
-                renameValueOldName: IdentifierNode.create(typeValueName),
-                renameValueNewName: IdentifierNode.create(newTypeValueName)
+                renameValueOldName: IdentifierNode.create(oldValue),
+                renameValueNewName: IdentifierNode.create(newValue)
             })
         })
     }
@@ -72,10 +114,10 @@ export class AlterTypeBuilder implements OperationNodeSource, Compilable  {
 
     compile(): CompiledQuery {
         return this.#props.executor.compileQuery(
-          this.toOperationNode(),
-          this.#props.queryId,
+            this.toOperationNode(),
+            this.#props.queryId,
         )
-      }
+    }
 }
 
 
