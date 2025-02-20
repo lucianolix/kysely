@@ -10,6 +10,7 @@ import { AlterTypeExecutor } from './alter-type-executor.js'
 import { IdentifierNode } from '../operation-node/identifier-node.js'
 import { AlterTypeAddValueBuilder, AlterTypeAddValueCallback } from './alter-type-add-value-builder.js'
 import { AddValueNode } from '../operation-node/add-value-node.js'
+import { ValueNode } from '../operation-node/value-node.js'
 
 export class AlterTypeBuilder implements OperationNodeSource, Compilable {
     readonly #props: AlterTypeBuilderProps
@@ -103,8 +104,8 @@ export class AlterTypeBuilder implements OperationNodeSource, Compilable {
         return new AlterTypeExecutor({
             ...this.#props,
             node: AlterTypeNode.cloneWithAlterTypeProps(this.#props.node, {
-                renameValueOldName: IdentifierNode.create(oldValue),
-                renameValueNewName: IdentifierNode.create(newValue)
+                renameValueOldName: ValueNode.create(oldValue),
+                renameValueNewName: ValueNode.create(newValue)
             })
         })
     }

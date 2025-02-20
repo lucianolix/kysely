@@ -3,6 +3,7 @@ import { freeze } from '../util/object-utils.js'
 import { SchemableIdentifierNode } from './schemable-identifier-node.js'
 import { IdentifierNode } from './identifier-node.js'
 import { AddValueNode } from './add-value-node.js'
+import { ValueNode } from './value-node.js'
 
 export type AlterTypeNodeProps = Omit<AlterTypeNode, 'kind' | 'name'>
 
@@ -13,8 +14,8 @@ export interface AlterTypeNode extends OperationNode {
     ownerTo?: IdentifierNode,
     setSchema?: IdentifierNode,
     addValue?: AddValueNode,
-    renameValueOldName?: IdentifierNode,
-    renameValueNewName?: IdentifierNode
+    renameValueOldName?: ValueNode,
+    renameValueNewName?: ValueNode
 }
 
 /**
