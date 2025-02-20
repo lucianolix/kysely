@@ -100,7 +100,7 @@ import { RefreshMaterializedViewNode } from './refresh-materialized-view-node.js
 import { OrActionNode } from './or-action-node.js'
 import { CollateNode } from './collate-node.js'
 import { AlterTypeNode } from './alter-type-node.js'
-
+import { AddValueNode } from './add-value-node.js'
 export abstract class OperationNodeVisitor {
   protected readonly nodeStack: OperationNode[] = []
 
@@ -207,6 +207,7 @@ export abstract class OperationNodeVisitor {
     OrActionNode: this.visitOrAction.bind(this),
     CollateNode: this.visitCollate.bind(this),
     AlterTypeNode: this.visitAlterType.bind(this),
+    AddValueNode: this.visitAddValue.bind(this),
   })
 
   protected readonly visitNode = (node: OperationNode): void => {
@@ -324,4 +325,5 @@ export abstract class OperationNodeVisitor {
   protected abstract visitOrAction(node: OrActionNode): void
   protected abstract visitCollate(node: CollateNode): void
   protected abstract visitAlterType(node: AlterTypeNode): void
+  protected abstract visitAddValue(node: AddValueNode): void
 }

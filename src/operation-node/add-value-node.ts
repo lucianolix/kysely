@@ -1,6 +1,5 @@
 import { OperationNode } from './operation-node.js'
 import { freeze } from '../util/object-utils.js'
-import { SchemableIdentifierNode } from './schemable-identifier-node.js'
 import { IdentifierNode } from './identifier-node.js'
 
 export type AddValueNodeProps = Omit<AddValueNode, 'kind' | 'value'>

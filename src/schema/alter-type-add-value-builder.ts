@@ -1,76 +1,68 @@
 
 import { OperationNodeSource } from '../operation-node/operation-node-source.js'
-import { CompiledQuery } from '../query-compiler/compiled-query.js'
-import { Compilable } from '../util/compilable.js'
-import { QueryExecutor } from '../query-executor/query-executor.js'
-import { QueryId } from '../util/query-id.js'
-import { freeze } from '../util/object-utils.js'
-import { AlterTypeNode } from '../operation-node/alter-type-node.js'
-import { AlterTypeExecutor } from './alter-type-executor.js'
 import { IdentifierNode } from '../operation-node/identifier-node.js'
-import { AlterTypeBuilder } from './alter-type-builder.js'
 import { AddValueNode } from '../operation-node/add-value-node.js'
 
-export class AlterTypeAddValueBuilder implements OperationNodeSource, Compilable  {
-    readonly #props: AlterTypeAddValueBuilderProps
+export class AlterTypeAddValueBuilder implements OperationNodeSource {
+    readonly #node: AddValueNode
 
-    constructor(props: AlterTypeAddValueBuilderProps) {
-        this.#props = freeze(props)
+    constructor(node: AddValueNode) {
+        this.#node = node;
     }
 
+    /**
+     * Avoids the query throwing an error if the value already exists inside the enum type.
+     *
+     * ### Examples
+     *
+     * ```ts
+     * db.schema.alterType('species').renameValue('cat', 'dog').execute()
+     * ```
+     */
     ifNotExists() {
-        return new AlterTypeAddValueBuilder({
-            ...this.#props,
-            node: AlterTypeNode.cloneWithAlterTypeProps(this.#props.node, {
-                addValue: AddValueNode.cloneWithAddValueProps(this.#props.node.addValue!, {
-                    ifNotExists: true
-                })
-            })
-        })
+        return new AlterTypeAddValueBuilder(AddValueNode.cloneWithAddValueProps(this.#node, {
+            ifNotExists: true
+        }))
     }
 
+    /**
+     * Adds the new value before the specified existing value.
+     *
+     * ### Examples
+     *
+     * ```ts
+     * db.schema.alterType('species').renameValue('cat', 'dog').execute()
+     * ```
+     */
     before(value: string) {
-        return new AlterTypeExecutor({
-            ...this.#props,
-            node: AlterTypeNode.cloneWithAlterTypeProps(this.#props.node, {
-                addValue: AddValueNode.cloneWithAddValueProps(this.#props.node.addValue!, {
-                    before: IdentifierNode.create(value)
-                })
-            })
-        })
+        return new AlterTypeAddValueBuilder(AddValueNode.cloneWithAddValueProps(this.#node, {
+            before: IdentifierNode.create(value)
+        }))
     }
+    /**
+   * Adds the new value after the specified existing value.
+   *
+   * ### Examples
+   *
+   * ```ts
+   * db.schema.alterType('species').renameValue('cat', 'dog').execute()
+   * ```
+   */
     after(value: string) {
-        return new AlterTypeExecutor({
-            ...this.#props,
-            node: AlterTypeNode.cloneWithAlterTypeProps(this.#props.node, {
-                addValue: AddValueNode.cloneWithAddValueProps(this.#props.node.addValue!, {
-                    after: IdentifierNode.create(value)
-                })
-            })
-        })
+        return new AlterTypeAddValueBuilder(AddValueNode.cloneWithAddValueProps(this.#node, {
+            after: IdentifierNode.create(value)
+        }))
     }
 
-    $call<T>(func: (qb: this) => T): T {
-        return func(this)
-      }
-      toOperationNode(): AlterTypeNode {
-        return this.#props.executor.transformQuery(
-            this.#props.node,
-            this.#props.queryId,
-        )
+    toOperationNode(): AddValueNode {
+        return this.#node
     }
 
-    compile(): CompiledQuery {
-        return this.#props.executor.compileQuery(
-          this.toOperationNode(),
-          this.#props.queryId,
-        )
-      }
 }
 
 
-export interface AlterTypeAddValueBuilderProps {
-    readonly queryId: QueryId
-    readonly executor: QueryExecutor
-    readonly node: AlterTypeNode
-}
+
+
+export type AlterTypeAddValueCallback = (
+    builder: AlterTypeAddValueBuilder,
+) => AlterTypeAddValueBuilder
