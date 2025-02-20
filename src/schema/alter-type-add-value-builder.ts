@@ -1,7 +1,7 @@
 
 import { OperationNodeSource } from '../operation-node/operation-node-source.js'
-import { IdentifierNode } from '../operation-node/identifier-node.js'
 import { AddValueNode } from '../operation-node/add-value-node.js'
+import { ValueNode } from '../operation-node/value-node.js';
 
 export class AlterTypeAddValueBuilder implements OperationNodeSource {
     readonly #node: AddValueNode
@@ -36,7 +36,7 @@ export class AlterTypeAddValueBuilder implements OperationNodeSource {
      */
     before(value: string) {
         return new AlterTypeAddValueBuilder(AddValueNode.cloneWithAddValueProps(this.#node, {
-            before: IdentifierNode.create(value),
+            before: ValueNode.create(value),
             after: undefined // before and after are mutually exclusive
         }))
     }
@@ -51,7 +51,7 @@ export class AlterTypeAddValueBuilder implements OperationNodeSource {
    */
     after(value: string) {
         return new AlterTypeAddValueBuilder(AddValueNode.cloneWithAddValueProps(this.#node, {
-            after: IdentifierNode.create(value),
+            after: ValueNode.create(value),
             before: undefined // before and after are mutually exclusive
         }))
     }
