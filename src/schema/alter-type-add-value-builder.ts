@@ -36,7 +36,8 @@ export class AlterTypeAddValueBuilder implements OperationNodeSource {
      */
     before(value: string) {
         return new AlterTypeAddValueBuilder(AddValueNode.cloneWithAddValueProps(this.#node, {
-            before: IdentifierNode.create(value)
+            before: IdentifierNode.create(value),
+            after: undefined // before and after are mutually exclusive
         }))
     }
     /**
@@ -50,7 +51,8 @@ export class AlterTypeAddValueBuilder implements OperationNodeSource {
    */
     after(value: string) {
         return new AlterTypeAddValueBuilder(AddValueNode.cloneWithAddValueProps(this.#node, {
-            after: IdentifierNode.create(value)
+            after: IdentifierNode.create(value),
+            before: undefined // before and after are mutually exclusive
         }))
     }
 
