@@ -8,7 +8,7 @@ import { freeze } from '../util/object-utils.js'
 import { AlterTypeNode } from '../operation-node/alter-type-node.js'
 import { AlterTypeExecutor } from './alter-type-executor.js'
 import { IdentifierNode } from '../operation-node/identifier-node.js'
-import { AlterTypeAddValueBuilder } from './alter-type-add-value-builder.js'
+import { AlterTypeAddValueBuilder, AlterTypeAddValueCallback } from './alter-type-add-value-builder.js'
 import { AddValueNode } from '../operation-node/add-value-node.js'
 
 export class AlterTypeBuilder implements OperationNodeSource, Compilable {
@@ -76,16 +76,19 @@ export class AlterTypeBuilder implements OperationNodeSource, Compilable {
      * ### Examples
      *
      * ```ts
-     * db.schema.alterType('species').addValue('capybara').execute()
+     * db.schema.alterType('species').addValue('cat', (qb) => qb.after('dog')).execute()
      * ```
      */
-    addValue(value: string) {
-        return new AlterTypeAddValueBuilder({
+    addValue(value: string, addValueOptions?: AlterTypeAddValueCallback ) {
+        const addValueNode = AddValueNode.create(IdentifierNode.create(value))
+        const addValueBuilder = new AlterTypeAddValueBuilder(addValueNode)
+        const builder = addValueOptions ? addValueOptions(addValueBuilder) : addValueBuilder
+        return new AlterTypeExecutor({
             ...this.#props,
             node: AlterTypeNode.cloneWithAlterTypeProps(this.#props.node, {
-                addValue: AddValueNode.create(IdentifierNode.create(value))
+                addValue: AddValueNode.cloneWithAddValueProps(addValueNode, builder.toOperationNode())
             })
-        })
+        })   
     }
     /**
      * Renames a value of an enum type.
@@ -93,7 +96,7 @@ export class AlterTypeBuilder implements OperationNodeSource, Compilable {
      * ### Examples
      *
      * ```ts
-     * db.schema.alterType('species').renameValue('cat', 'capybara').execute()
+     * db.schema.alterType('species').renameValue('cat', 'dog').execute()
      * ```
      */
     renameValue(oldValue: string, newValue: string) {
