@@ -1,4 +1,3 @@
-import { AlterTableNode } from '../operation-node/alter-table-node.js'
 import { AlterTypeNode } from '../operation-node/alter-type-node.js'
 import { OperationNodeSource } from '../operation-node/operation-node-source.js'
 import { CompiledQuery } from '../query-compiler/compiled-query.js'
