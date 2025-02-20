@@ -1,13 +1,12 @@
 import { OperationNode } from './operation-node.js'
 import { freeze } from '../util/object-utils.js'
-import { IdentifierNode } from './identifier-node.js'
 import { ValueNode } from './value-node.js'
 
 export type AddValueNodeProps = Omit<AddValueNode, 'kind' | 'value'>
 
 export interface AddValueNode extends OperationNode {
     readonly kind: 'AddValueNode',
-    readonly value: IdentifierNode
+    readonly value: ValueNode,
     ifNotExists?: boolean,
     before?: ValueNode,
     after?: ValueNode
@@ -21,7 +20,7 @@ export const AddValueNode = freeze({
         return node.kind === 'AddValueNode'
     },
     create(
-        value: IdentifierNode
+        value: ValueNode
     ): AddValueNode {
         return freeze({
             kind: 'AddValueNode',
