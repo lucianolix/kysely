@@ -295,7 +295,7 @@ export function testSql(
     ? expected.sql.map((it) => it.trim()).join(' ')
     : expected.sql
   const sql = query.compile()
-  
+
   chai.expect(expectedSql).to.equal(sql.sql)
   chai.expect(expected.parameters).to.eql(sql.parameters)
 }
