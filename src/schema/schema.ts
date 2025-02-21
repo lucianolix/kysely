@@ -301,7 +301,7 @@ export class SchemaModule {
 
   /**
    * Alter a type.
-   * 
+   *
    * Only some dialects like PostgreSQL have user-defined types.
    * ```ts
    * await db.schema
@@ -315,7 +315,7 @@ export class SchemaModule {
       queryId: createQueryId(),
       executor: this.#executor,
       node: AlterTypeNode.create(parseSchemableIdentifier(typeName)),
-    }) 
+    })
   }
 
   /**

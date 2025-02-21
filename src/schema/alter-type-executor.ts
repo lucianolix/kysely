@@ -15,12 +15,12 @@ export class AlterTypeExecutor implements OperationNodeSource, Compilable {
 
   toOperationNode(): AlterTypeNode {
     return this.#props.executor.transformQuery(
-        this.#props.node,
-        this.#props.queryId,
+      this.#props.node,
+      this.#props.queryId,
     )
-}
+  }
 
-compile(): CompiledQuery {
+  compile(): CompiledQuery {
     return this.#props.executor.compileQuery(
       this.toOperationNode(),
       this.#props.queryId,

@@ -242,7 +242,7 @@ export class OperationNodeTransformer {
     OrActionNode: this.transformOrAction.bind(this),
     CollateNode: this.transformCollate.bind(this),
     AlterTypeNode: this.transformAlterType.bind(this),
-    AddValueNode: this.transformAddValue.bind(this)
+    AddValueNode: this.transformAddValue.bind(this),
   })
 
   transformNode<T extends OperationNode | undefined>(
@@ -1340,8 +1340,7 @@ export class OperationNodeTransformer {
   protected transformAlterType(
     node: AlterTypeNode,
     queryId?: QueryId,
-  )
-  : AlterTypeNode {
+  ): AlterTypeNode {
     return requireAllProps<AlterTypeNode>({
       kind: 'AlterTypeNode',
       name: this.transformNode(node.name, queryId),
@@ -1350,16 +1349,19 @@ export class OperationNodeTransformer {
       renameValueNewName: this.transformNode(node.renameValueNewName, queryId),
       renameValueOldName: this.transformNode(node.renameValueOldName, queryId),
       setSchema: this.transformNode(node.setSchema, queryId),
-      addValue: this.transformNode(node.addValue)
+      addValue: this.transformNode(node.addValue),
     })
   }
-  protected transformAddValue(node: AddValueNode, queryId?: QueryId) : AddValueNode {
+  protected transformAddValue(
+    node: AddValueNode,
+    queryId?: QueryId,
+  ): AddValueNode {
     return requireAllProps<AddValueNode>({
-    kind: 'AddValueNode',
-    value: this.transformNode(node.value, queryId),
-    ifNotExists: node.ifNotExists,
-    before: this.transformNode(node.before, queryId),
-    after: this.transformNode(node.after, queryId),
+      kind: 'AddValueNode',
+      value: this.transformNode(node.value, queryId),
+      ifNotExists: node.ifNotExists,
+      before: this.transformNode(node.before, queryId),
+      after: this.transformNode(node.after, queryId),
     })
   }
 }

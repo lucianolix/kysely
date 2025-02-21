@@ -1399,7 +1399,7 @@ export class DefaultQueryCompiler
 
     if (node.ownerTo) {
       this.append('owner to ')
-      this.visitNode(node.ownerTo)  
+      this.visitNode(node.ownerTo)
     }
 
     if (node.renameTo) {
@@ -1423,7 +1423,6 @@ export class DefaultQueryCompiler
     if (node.addValue) {
       this.visitNode(node.addValue)
     }
-
   }
 
   protected override visitAddValue(node: AddValueNode): void {
