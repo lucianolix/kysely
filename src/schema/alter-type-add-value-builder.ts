@@ -1,7 +1,7 @@
 
 import { OperationNodeSource } from '../operation-node/operation-node-source.js'
 import { AddValueNode } from '../operation-node/add-value-node.js'
-import { ValueNode } from '../operation-node/value-node.js';
+import { ValueNode } from '../operation-node/value-node.js'
 
 export class AlterTypeAddValueBuilder implements OperationNodeSource {
     readonly #node: AddValueNode
