@@ -1949,6 +1949,87 @@ for (const dialect of DIALECTS) {
       }
     })
 
+    describe('refresh materialized view', () => {
+      beforeEach(async () => {
+        await ctx.db.schema
+          .createView('materialized_dogs')
+          .materialized()
+          .as(ctx.db.selectFrom('pet').selectAll().where('species', '=', 'dog'))
+          .execute()
+      })
+
+      afterEach(async () => {
+        await ctx.db.schema
+          .dropView('materialized_dogs')
+          .materialized()
+          .ifExists()
+          .execute()
+      })
+
+      if (dialect === 'postgres') {
+        it('should refresh a materialized view', async () => {
+          const builder =
+            ctx.db.schema.refreshMaterializedView('materialized_dogs')
+
+          testSql(builder, dialect, {
+            postgres: {
+              sql: `refresh materialized view "materialized_dogs" with data`,
+              parameters: [],
+            },
+            mssql: NOT_SUPPORTED,
+            mysql: NOT_SUPPORTED,
+            sqlite: NOT_SUPPORTED,
+          })
+
+          await builder.execute()
+        })
+
+        it('should refresh a materialized view concurrently', async () => {
+          // concurrent refreshes require a unique index
+          await ctx.db.schema
+            .createIndex('materialized_dogs_index')
+            .unique()
+            .on('materialized_dogs')
+            .columns(['id'])
+            .execute()
+
+          const builder = ctx.db.schema
+            .refreshMaterializedView('materialized_dogs')
+            .concurrently()
+
+          testSql(builder, dialect, {
+            postgres: {
+              sql: `refresh materialized view concurrently "materialized_dogs" with data`,
+              parameters: [],
+            },
+            mssql: NOT_SUPPORTED,
+            mysql: NOT_SUPPORTED,
+            sqlite: NOT_SUPPORTED,
+          })
+
+          await builder.execute()
+        })
+
+        it('should refresh a materialized view with no data', async () => {
+          const builder = ctx.db.schema
+            .refreshMaterializedView('materialized_dogs')
+            .withNoData()
+
+          testSql(builder, dialect, {
+            postgres: {
+              sql: `refresh materialized view "materialized_dogs" with no data`,
+              parameters: [],
+            },
+            mssql: NOT_SUPPORTED,
+            mysql: NOT_SUPPORTED,
+            sqlite: NOT_SUPPORTED,
+          })
+
+          await builder.execute()
+        })
+      }
+    })
+
     describe('drop view', () => {
       beforeEach(async () => {
         await ctx.db.schema
@@ -2232,6 +2313,164 @@ for (const dialect of DIALECTS) {
 
       async function cleanup() {
         await ctx.db.schema.dropType('species').ifExists().execute()
+      }
+    })
+
+    describe('alter type', () => {
+      if (dialect === 'postgres') {
+        beforeEach(cleanup)
+        afterEach(cleanup)
+
+        async function cleanup() {
+          await ctx.db.schema.dropType('species').ifExists().execute()
+          await ctx.db.schema
+            .createType('species')
+            .asEnum(['cat', 'dog', 'frog'])
+            .execute()
+        }
+
+        it('should alter the type owner', async () => {
+          const builder = ctx.db.schema.alterType('species').ownerTo('kysely')
+
+          testSql(builder, dialect, {
+            postgres: {
+              sql: `alter type "species" owner to "kysely"`,
+              parameters: [],
+            },
+            mysql: NOT_SUPPORTED,
+            mssql: NOT_SUPPORTED,
+            sqlite: NOT_SUPPORTED,
+          })
+
+          await builder.execute()
+        })
+        it('should rename the type', async () => {
+          await ctx.db.schema.dropType('new_species').ifExists().execute()
+          const builder = ctx.db.schema
+            .alterType('species')
+            .renameTo('new_species')
+
+          testSql(builder, dialect, {
+            postgres: {
+              sql: `alter type "species" rename to "new_species"`,
+              parameters: [],
+            },
+            mysql: NOT_SUPPORTED,
+            mssql: NOT_SUPPORTED,
+            sqlite: NOT_SUPPORTED,
+          })
+
+          await builder.execute()
+          await ctx.db.schema.dropType('new_species').ifExists().execute()
+        })
+
+        it('should alter the type schema', async () => {
+          const builder = ctx.db.schema.alterType('species').setSchema('public')
+
+          testSql(builder, dialect, {
+            postgres: {
+              sql: `alter type "species" set schema "public"`,
+              parameters: [],
+            },
+            mysql: NOT_SUPPORTED,
+            mssql: NOT_SUPPORTED,
+            sqlite: NOT_SUPPORTED,
+          })
+        })
+
+        it('should rename values inside an enum type', () => {
+          const builder = ctx.db.schema
+            .alterType('species')
+            .renameValue('cat', 'capybara')
+          testSql(builder, dialect, {
+            postgres: {
+              sql: `alter type "species" rename value 'cat' to 'capybara'`,
+              parameters: [],
+            },
+            mysql: NOT_SUPPORTED,
+            mssql: NOT_SUPPORTED,
+            sqlite: NOT_SUPPORTED,
+          })
+          return builder.execute()
+        })
+
+        describe('add value, enum type', () => {
+          it('should add a value', async () => {
+            const builder = ctx.db.schema
+              .alterType('species')
+              .addValue('capybara')
+            testSql(builder, dialect, {
+              postgres: {
+                sql: `alter type "species" add value 'capybara'`,
+                parameters: [],
+              },
+              mysql: NOT_SUPPORTED,
+              mssql: NOT_SUPPORTED,
+              sqlite: NOT_SUPPORTED,
+            })
+            await builder.execute()
+          })
+          it('should not throw error if value already exists and ifNotExists is specified', async () => {
+            const builder = ctx.db.schema
+              .alterType('species')
+              .addValue('cat', (eb) => eb.ifNotExists())
+            testSql(builder, dialect, {
+              postgres: {
+                sql: `alter type "species" add value if not exists 'cat'`,
+                parameters: [],
+              },
+              mysql: NOT_SUPPORTED,
+              mssql: NOT_SUPPORTED,
+              sqlite: NOT_SUPPORTED,
+            })
+            await builder.execute()
+          })
+          it('should be able to add a value before another value', async () => {
+            const builder = ctx.db.schema
+              .alterType('species')
+              .addValue('capybara', (eb) => eb.before('dog'))
+            testSql(builder, dialect, {
+              postgres: {
+                sql: `alter type "species" add value 'capybara' before 'dog'`,
+                parameters: [],
+              },
+              mysql: NOT_SUPPORTED,
+              mssql: NOT_SUPPORTED,
+              sqlite: NOT_SUPPORTED,
+            })
+            await builder.execute()
+          })
+          it('should be able to add a value after another value', async () => {
+            const builder = ctx.db.schema
+              .alterType('species')
+              .addValue('capybara', (eb) => eb.after('dog'))
+            testSql(builder, dialect, {
+              postgres: {
+                sql: `alter type "species" add value 'capybara' after 'dog'`,
+                parameters: [],
+              },
+              mysql: NOT_SUPPORTED,
+              mssql: NOT_SUPPORTED,
+              sqlite: NOT_SUPPORTED,
+            })
+            await builder.execute()
+          })
+          it('should enforce before and after be mutually exclusive, by using the last one specified', async () => {
+            const builder = ctx.db.schema
+              .alterType('species')
+              .addValue('capybara', (eb) => eb.before('dog').after('cat'))
+            testSql(builder, dialect, {
+              postgres: {
+                sql: `alter type "species" add value 'capybara' after 'cat'`,
+                parameters: [],
+              },
+              mysql: NOT_SUPPORTED,
+              mssql: NOT_SUPPORTED,
+              sqlite: NOT_SUPPORTED,
+            })
+            await builder.execute()
+          })
+        })
       }
     })
 

@@ -111,6 +111,13 @@ import { CastNode } from '../operation-node/cast-node.js'
 import { FetchNode } from '../operation-node/fetch-node.js'
 import { TopNode } from '../operation-node/top-node.js'
 import { OutputNode } from '../operation-node/output-node.js'
+import { RefreshMaterializedViewNode } from '../operation-node/refresh-materialized-view-node.js'
+import { OrActionNode } from '../operation-node/or-action-node.js'
+import { logOnce } from '../util/log-once.js'
+import { CollateNode } from '../operation-node/collate-node.js'
+import { QueryId } from '../util/query-id.js'
+import { AlterTypeNode } from '../operation-node/alter-type-node.js'
+import { AddValueNode } from '../operation-node/add-value-node.js'
 
 export class DefaultQueryCompiler
   extends OperationNodeVisitor
@@ -123,7 +130,7 @@ export class DefaultQueryCompiler
     return this.#parameters.length
   }
 
-  compileQuery(node: RootOperationNode): CompiledQuery {
+  compileQuery(node: RootOperationNode, queryId: QueryId): CompiledQuery {
     this.#sql = ''
     this.#parameters = []
     this.nodeStack.splice(0, this.nodeStack.length)
@@ -132,6 +139,7 @@ export class DefaultQueryCompiler
 
     return freeze({
       query: node,
+      queryId,
       sql: this.getSql(),
       parameters: [...this.#parameters],
     })
@@ -310,8 +318,17 @@ export class DefaultQueryCompiler
 
     this.append(node.replace ? 'replace' : 'insert')
 
+    // TODO: remove in 0.29.
     if (node.ignore) {
+      logOnce(
+        '`InsertQueryNode.ignore` is deprecated. Use `InsertQueryNode.orAction` instead.',
+      )
       this.append(' ignore')
+    }
+
+    if (node.orAction) {
+      this.append(' ')
+      this.visitNode(node.orAction)
     }
 
     if (node.top) {
@@ -746,9 +763,19 @@ export class DefaultQueryCompiler
   protected override visitOrderByItem(node: OrderByItemNode): void {
     this.visitNode(node.orderBy)
 
+    if (node.collation) {
+      this.append(' ')
+      this.visitNode(node.collation)
+    }
+
     if (node.direction) {
       this.append(' ')
       this.visitNode(node.direction)
+    }
+
+    if (node.nulls) {
+      this.append(' nulls ')
+      this.append(node.nulls)
     }
   }
 
@@ -808,6 +835,12 @@ export class DefaultQueryCompiler
     }
 
     if (node.joins) {
+      if (!node.from) {
+        throw new Error(
+          "Joins in an update query are only supported as a part of a PostgreSQL 'update set from join' query. If you want to create a MySQL 'update join set' query, see https://kysely.dev/docs/examples/update/my-sql-joins",
+        )
+      }
+
       this.append(' ')
       this.compileList(node.joins, ' ')
     }
@@ -815,6 +848,11 @@ export class DefaultQueryCompiler
     if (node.where) {
       this.append(' ')
       this.visitNode(node.where)
+    }
+
+    if (node.orderBy) {
+      this.append(' ')
+      this.visitNode(node.orderBy)
     }
 
     if (node.limit) {
@@ -1250,6 +1288,24 @@ export class DefaultQueryCompiler
     }
   }
 
+  protected override visitRefreshMaterializedView(
+    node: RefreshMaterializedViewNode,
+  ): void {
+    this.append('refresh materialized view ')
+
+    if (node.concurrently) {
+      this.append('concurrently ')
+    }
+
+    this.visitNode(node.name)
+
+    if (node.withNoData) {
+      this.append(' with no data')
+    } else {
+      this.append(' with data')
+    }
+  }
+
   protected override visitDropView(node: DropViewNode): void {
     this.append('drop ')
 
@@ -1336,6 +1392,55 @@ export class DefaultQueryCompiler
     this.visitNode(node.name)
   }
 
+  protected override visitAlterType(node: AlterTypeNode): void {
+    this.append('alter type ')
+    this.visitNode(node.name)
+    this.append(' ')
+
+    if (node.ownerTo) {
+      this.append('owner to ')
+      this.visitNode(node.ownerTo)
+    }
+
+    if (node.renameTo) {
+      this.append('rename to ')
+      this.visitNode(node.renameTo)
+    }
+
+    if (node.setSchema) {
+      this.append('set schema ')
+      this.visitNode(node.setSchema)
+    }
+
+    if (node.renameValueOldName && node.renameValueNewName) {
+      this.append('rename value ')
+      this.visitNode(node.renameValueOldName)
+      this.append(' ')
+      this.append('to ')
+      this.visitNode(node.renameValueNewName)
+    }
+
+    if (node.addValue) {
+      this.visitNode(node.addValue)
+    }
+  }
+
+  protected override visitAddValue(node: AddValueNode): void {
+    this.append('add value ')
+    if (node.ifNotExists) {
+      this.append('if not exists ')
+    }
+    this.visitNode(node.value)
+    if (node.before) {
+      this.append(' before ')
+      this.visitNode(node.before)
+    }
+    if (node.after) {
+      this.append(' after ')
+      this.visitNode(node.after)
+    }
+  }
+
   protected override visitExplain(node: ExplainNode): void {
     this.append('explain')
 
@@ -1381,6 +1486,12 @@ export class DefaultQueryCompiler
     }
 
     this.append(')')
+
+    if (node.withinGroup) {
+      this.append(' within group (')
+      this.visitNode(node.withinGroup)
+      this.append(')')
+    }
 
     if (node.filter) {
       this.append(' filter(')
@@ -1560,6 +1671,11 @@ export class DefaultQueryCompiler
       this.compileList(node.whens, ' ')
     }
 
+    if (node.returning) {
+      this.append(' ')
+      this.visitNode(node.returning)
+    }
+
     if (node.output) {
       this.append(' ')
       this.visitNode(node.output)
@@ -1631,6 +1747,15 @@ export class DefaultQueryCompiler
     if (node.modifiers) {
       this.append(` ${node.modifiers}`)
     }
+  }
+
+  protected override visitOrAction(node: OrActionNode): void {
+    this.append(node.action)
+  }
+
+  protected override visitCollate(node: CollateNode): void {
+    this.append('collate ')
+    this.visitNode(node.collation)
   }
 
   protected append(str: string): void {
@@ -1762,7 +1887,11 @@ const JOIN_TYPE_SQL: Readonly<Record<JoinType, string>> = freeze({
   LeftJoin: 'left join',
   RightJoin: 'right join',
   FullJoin: 'full join',
+  CrossJoin: 'cross join',
   LateralInnerJoin: 'inner join lateral',
   LateralLeftJoin: 'left join lateral',
+  LateralCrossJoin: 'cross join lateral',
+  OuterApply: 'outer apply',
+  CrossApply: 'cross apply',
   Using: 'using',
 })
